@@ -52,7 +52,7 @@ class Orbit():
             raise RuntimeError("Fall-through shouldn't be possible")
         return tau
     
-    def __init__(self, e, a, i, LAN, AoP, f, t, mu, do_checks=True, time_mode='tau'):
+    def __init__(self, e, a, i, LAN, AoP, f, t, mu, do_checks=True, time_mode='t0'):
         if i > np.pi and i <= 180:
             # Assume given in degrees
             i = util.rad(i)
