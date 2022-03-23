@@ -9,6 +9,8 @@ import numpy as np
 from collections import namedtuple
 import datetime
 
+deg_sign = u'\N{DEGREE SIGN}'
+
 J_cent = 36525 # Number of days in a Julian century
 J2000 = 2451545.0
 AU = 1.49597870700e8 # km / AU - per PlanetaryGravitationalCoefficientsRadii-1 on 6008 Canvas
