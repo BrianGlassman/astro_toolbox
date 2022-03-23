@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 # https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
 from mpl_toolkits import mplot3d
 
-import util
+from . import util
 
 class Orbit():
     @staticmethod
@@ -395,7 +395,7 @@ class Orbit():
         -------
         an Orbit object that includes the given parameters
         """
-        import meeus
+        from . import meeus
         T = meeus.JDE_to_T(JDE)
         ele = meeus.get_elements(planet, T, angle_units='rad')
         ele['t'] = ele.pop('tau')
@@ -485,6 +485,7 @@ class Orbit():
         else:
             raise ValueError(f"Unknown angle_units: {angle_units}")
         return ans
+    
     kepler = predict # Alias
     
     def position_velocity(self, time=None):

@@ -24,7 +24,7 @@ Notes:
 
 import numpy as np
 
-from util import *
+from .util import *
 
 def JDE_to_T(JDE):
     T = (JDE - J2000) / J_cent
