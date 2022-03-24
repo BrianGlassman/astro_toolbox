@@ -14,6 +14,10 @@ from mpl_toolkits import mplot3d
 
 from . import util
 
+# TODO
+# - Refactor to use the Universal Variable approach in Prussing/Conway
+#   This should mean that the same approaches can be used regardless of elliptical vs. hyperbolic
+
 class Orbit():
     @staticmethod
     def __calc_tau(e, a, f, t0, mu, do_checks=True):
@@ -42,15 +46,32 @@ class Orbit():
                 else:
                     pass # Approximately zero
                 
-                
             if do_checks: assert -.01*T <= tau < T
-        elif e == 1:
-            raise NotImplementedError(f"Parabolic orbit. e = {e}")
-        elif e > 1:
-            raise NotImplementedError(f"Hyperbolic orbit. e = {e}")
+        elif e >= 1:
+            # Hyperbolic or Parabolic
+            # Tau is fixed. Tau > t0 if inbound, tau < t0 if outbound
+            # Source: http://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+            #E = np.arccosh((np.cos(f) + e) / (1 + e*np.cos(f))) # Eccentric anomaly
+            H = 2*np.arctanh(np.sqrt((e-1)/(e+1))*np.tan(f/2)) # Hyperbolic anomaly <-- tanh(H/2) = sqrt((e-1)/(e+1))*tan(f/2)
+            if abs(H) > np.pi:
+                raise RuntimeError(f"probably bad? H = {H}")
+            
+            M = e*np.sinh(H) - H # Mean Anomaly = sqrt(mu / (-a)**3) * (t0 - tau)
+            tau = t0 - M*np.sqrt((-a)**3 / mu)
         else:
             raise RuntimeError("Fall-through shouldn't be possible")
         return tau
+    
+    @staticmethod
+    def __normalize_f(f, e):
+        if e < 1:
+            # Force positive true anomaly for elliptical/circular orbits
+            if f < 0:
+                f += 2*np.pi
+            assert 0 <= f <= 2*np.pi, f"f = {f}"
+        else:
+            assert -np.pi < f < np.pi
+        return f
     
     def __init__(self, e, a, i, LAN, AoP, f, t, mu, do_checks=True, time_mode='t0'):
         if i > np.pi and i <= 180:
@@ -66,9 +87,7 @@ class Orbit():
                 # print(f"AoP = {AoP} out of range, normalizing")
                 AoP = util.normalize_angle(AoP)
         if do_checks:
-            if not (0 <= f <= 2*np.pi):
-                # print(f"f = {f} out of range, normalizing")
-                f = util.normalize_angle(f)
+            f = self.__normalize_f(f, e)
         # assert 0 <= tau <= 2*np.pi # not sure I should force-check tau, and this is wrong anyway
         if do_checks: assert mu > 0
         
@@ -225,12 +244,13 @@ class Orbit():
             # Non-circular. Use periapsis (from eccentricity vector) as usual
             f = np.arctan2(np.dot(position, np.cross(h_hat, e_hat)),
                            np.dot(position, e_hat))
-        if f < 0:
-            f += 2*np.pi
-        if do_checks: assert 0 <= f <= 2*np.pi, f"f = {f}"
+        f = cls.__normalize_f(f, e)
     
         # Time of periapsis passage
-        tau = cls.__calc_tau(e=e, a=a, f=f, t0=t0, mu=mu)
+        if 'tau' in overrides:
+            tau = overrides['tau']
+        else:
+            tau = cls.__calc_tau(e=e, a=a, f=f, t0=t0, mu=mu)
         
         return cls(e=e, a=a, i=i, LAN=LAN, AoP=AoP, f=f, t=tau,
                    time_mode='tau', mu=mu, do_checks=do_checks)
@@ -330,7 +350,7 @@ class Orbit():
             x = np.sqrt(y / c2)
             tof = (c3*x**3 + A*np.sqrt(y)) / np.sqrt(mu)
             if tof_target < tof:
-                raise ValueError("Target TOF < TOF for psi_low. Transfer can't be computed")
+                raise ValueError(f"Target TOF < TOF for psi_low ({tof:0.3e}). Transfer can't be computed")
             
         check_min_tof()
         
@@ -419,6 +439,15 @@ class Orbit():
         E = np.arctan2(sinE, cosE)
         return E
     
+    def M(self, time):
+        if self.e < 1:
+            # Elliptical or circular
+            M = np.sqrt(self.mu/self.a**3) * (time - self.tau)
+        else:
+            # Parabolic or hyperbolic
+            M = np.sqrt(self.mu/(-self.a)**3) * (time - self.tau)
+        return M
+    
     def __str__(self):
         return str(self.ele).replace(util.Orbital_Elements.__name__, "Orbit")
     
@@ -450,34 +479,50 @@ class Orbit():
         -------
         f : numeric
             True anomaly for the given orbit at the given time (in the chosen units)
-        E : numeric
+        E/F : numeric
             Eccentric anomaly for the given orbit at the given time (in the chosen units)
+            Note: is actuall hyperbolic eccentric anomaly (F) if orbit is hyperbolic
         """
-        ele = self.ele # rename for readability
-        
-        # Sources:
+        e = self.e # alias for readability
+        # Sources for root finding:
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html#scipy.optimize.OptimizeResult
         # https://stackoverflow.com/questions/43047463/find-root-of-a-transcendental-equation-with-python
-        M = np.sqrt(self.mu/ele.a**3) * (time - ele.tau)
-        def fun(E):
-            return M - (E - ele.e * np.sin(E))
-        ans = root(fun, M) # Find the root of the transcendental, using M as the starting point for E
-        assert ans.status == 1, "Failed to solve"
-        E = ans.x[0]
-        
-        # Equation A.5 from Appendix A
-        num = np.cos(E) - ele.e
-        den = 1 - ele.e*np.cos(E)
-        cosf = num / den
-        
-        # Equation A.6 from Appendix A
-        num = np.sqrt(1-ele.e**2) * np.sin(E)
-        den = 1 - ele.e*np.cos(E)
-        sinf = num / den
-        
-        # Run both equations through arctan2 to handle quadrants
-        f = np.arctan2(sinf, cosf)
-        
+        if e < 1:
+            # Equations primarily from 5052 Appendix A
+            M = self.M(time)
+            def fun(E):
+                return M - (E - e * np.sin(E))
+            ans = root(fun, M) # Find the root of the transcendental, using M as the starting point for E
+            assert ans.status == 1, "Failed to solve"
+            E = ans.x[0]
+            
+            # Equation A.5 from Appendix A
+            num = np.cos(E) - e
+            den = 1 - e*np.cos(E)
+            cosf = num / den
+            
+            # Equation A.6 from Appendix A
+            num = np.sqrt(1-e**2) * np.sin(E)
+            den = 1 - e*np.cos(E)
+            sinf = num / den
+            
+            # Run both equations through arctan2 to handle quadrants
+            f = np.arctan2(sinf, cosf)
+        else:
+            # Equations primarily from https://en.wikipedia.org/wiki/Hyperbolic_trajectory
+            # and https://space.stackexchange.com/a/27604
+            M = self.M(time)
+            def fun(F):
+                return M - (e*np.sinh(F) - F)
+            ans = root(fun, M) # Find the root of the transcendental, using M as the starting point for F
+            assert ans.status == 1, "Failed to solve"
+            F = ans.x[0]
+            
+            # tanh(F/2) = sqrt((e-1)/(e+2))tan(f/2)
+            f = 2*np.arctan(np.tanh(F/2) * np.sqrt((e+1)/(e-1)))
+            
+            E = F
+            
         if angle_units == 'rad':
             ans = f, E
         elif angle_units == 'deg':
@@ -510,7 +555,7 @@ class Orbit():
         """
         
         # Equations from class notes: Appendix_A
-        ele = self.ele # rename for readability
+        ele = self.ele # rename for readability, and so it can be modified safely
         if time is not None:
             f, E = self.predict(time)
             ele = ele._replace(f=f)
