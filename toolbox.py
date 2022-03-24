@@ -622,7 +622,9 @@ class Orbit():
         if threeD:
             ax.plot(p[:,0], p[:,1], p[:,2], **plot_kwargs)
         else:
-            assert not any(p[:,2] != 0)
+            threshold = abs(p[:,0:2]).max()*.05 # Use max instead of min because of axis crossings
+            if any(abs(p[:,2]) > threshold):
+                print(f"WARNING: Z value = {p[:,2].max()/(threshold/0.05)* 100}% of X/Y")
             ax.plot(p[:,0], p[:,1], **plot_kwargs)
     
         fig.legend(['Central body', 'Orbit'])
@@ -668,7 +670,9 @@ class Orbit():
         if threeD:
             ax.plot(p[0], p[1], p[2], **plot_kwargs)
         else:
-            assert p[2] == 0
+            threshold = abs(p[0:2]).min()
+            if abs(p[2]) > threshold*.05:
+                print(f"WARNING: Z value = {p[2].max()/threshold * 100}% of min(X,Y)")
             ax.plot(p[0], p[1], **plot_kwargs)
     
         fig.legend(['Central body', 'Orbit'])

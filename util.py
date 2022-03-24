@@ -66,12 +66,16 @@ norm = np.linalg.norm # Sugar syntax for getting a vector's length
 Orbital_Elements = namedtuple("Orbital_Elements", ['e','a','i','LAN','AoP','f','tau'])
 
 def square_3d(ax):
-    '''Make a 3D plot have "square" aspect ratio'''
-    # Adapted from https://stackoverflow.com/a/64453375/14501840
-    x = np.ptp(ax.get_xlim3d())
-    y = np.ptp(ax.get_ylim3d())
-    z = np.ptp(ax.get_zlim3d())
-    ax.set_box_aspect([x,y,z])
+    '''Make a 2D or 3D plot have "square" aspect ratio'''
+    threeD = ax.name == "3d" # https://stackoverflow.com/a/43563348/14501840
+    if threeD:
+        # Adapted from https://stackoverflow.com/a/64453375/14501840
+        x = np.ptp(ax.get_xlim3d())
+        y = np.ptp(ax.get_ylim3d())
+        z = np.ptp(ax.get_zlim3d())
+        ax.set_box_aspect([x,y,z])
+    else:
+        ax.set_aspect('equal')
     
 def normalize_angle(angle):
     """Normalizes an angle to the range [0, 2*pi]"""
