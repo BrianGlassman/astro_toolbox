@@ -66,8 +66,10 @@ class Orbit():
     def __normalize_f(f, e):
         if e < 1:
             # Force positive true anomaly for elliptical/circular orbits
-            if f < 0:
+            while f < 0:
                 f += 2*np.pi
+            while f > 2*np.pi:
+                f -= 2*np.pi
             assert 0 <= f <= 2*np.pi, f"f = {f}"
         else:
             assert -np.pi < f < np.pi
