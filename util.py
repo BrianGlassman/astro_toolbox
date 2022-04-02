@@ -85,11 +85,42 @@ def normalize_angle(angle):
         angle -= 2*np.pi
     return angle
 
-def calendar_to_jde(date):
+def _so_calendar_to_jde(date):
     # https://stackoverflow.com/a/39019116/14501840 adapted to include partial days to match jde_to_calendar
     ordinal = date.toordinal()
     jde = ordinal + 1721424.5
     jde += (date.hour + (date.minute + (date.second/60))/60)/24
+    return jde
+def calendar_to_jde(date):
+    # From L2 slides
+    assert isinstance(date, datetime.datetime)
+    
+    # Get date components
+    y, m, d = date.year, date.month, date.day
+    assert 1901 <= y <= 2099
+    assert 1 <= m <= 12
+    assert 1 <= d <= 31
+    
+    # Calculate integer portion of JDE
+    int_jde = 367*y - int(7*(y+int((m+9)/12)) / 4) + int(275*m/9) + d + 1721013.5
+    
+    # Get time components
+    h, m, s, ms = date.hour, date.minute, date.second, date.microsecond
+    # Convert everything to hours
+    s = s + ms*1e-6
+    m = m + s/60
+    h = h + m/60
+    assert 0 <= h <= 24
+    
+    # Calculate decimal portion of JDE
+    dec_jde = h / 24
+    
+    # Combine
+    jde = int_jde + dec_jde
+    
+    # Compare to Stack Overflow version
+    assert jde == _so_calendar_to_jde(date)
+    
     return jde
 juliandate = calendar_to_jde
 
@@ -100,3 +131,4 @@ def jde_to_calendar(jde):
     dt = datetime.datetime.fromordinal(ordinal)
     dt = dt + datetime.timedelta(days=remainder)
     return dt
+# TODO figure out how to reverse the lecture slide calculations
