@@ -6,7 +6,7 @@ Created on Mon Feb  7 21:57:33 2022
 """
 
 import numpy as np
-from collections import namedtuple
+from collections import namedtuple, UserDict
 import datetime
 
 deg_sign = u'\N{DEGREE SIGN}'
@@ -14,6 +14,19 @@ deg_sign = u'\N{DEGREE SIGN}'
 J_cent = 36525 # Number of days in a Julian century
 J2000 = 2451545.0
 AU = 1.49597870700e8 # km / AU - per PlanetaryGravitationalCoefficientsRadii-1 on 6008 Canvas
+
+class CaseInsensitiveDict(UserDict):
+    '''A dictionary that is case-insensitive for keys'''
+    def __init__(self, baseDict):
+        assert isinstance(baseDict, dict)
+        assert all(isinstance(key, str) for key in baseDict.keys())
+        baseDict = {key.lower():val for key,val in baseDict.items()}
+        super().__init__(baseDict)
+        
+    def __getitem__(self, key):
+        assert isinstance(key, str)
+        return super().__getitem__(key.lower())
+        
 mu = {# km^3/s^2
       'Sun'     : 1.32712440018e11,
       'Venus'   : 3.24858599e5,
@@ -25,6 +38,7 @@ mu = {# km^3/s^2
       'Neptune' : 6.835100e6,
       'Pluto'   : 8.71e2,
       }
+mu = CaseInsensitiveDict(mu)
 
 planetary_radius = {# km
                     'Venus'   : 6051.8,
@@ -36,6 +50,22 @@ planetary_radius = {# km
                     'Neptune' : 24764,
                     'Pluto'   : 1188.3,
                     }
+planetary_radius = CaseInsensitiveDict(planetary_radius)
+
+# Default planet colors
+colors = { # https://matplotlib.org/stable/gallery/color/named_colors.html
+    'Sun': 'yellow',
+    'Venus': 'tan',
+    'Earth': 'blue',
+    'Luna': 'royalblue',
+    'Mars': 'orangered',
+    'Jupiter': 'sandybrown',
+    'Saturn': 'gold',
+    'Uranus': 'cyan',
+    'Neptune': 'darkblue',
+    'Pluto': 'grey',
+    }
+colors = CaseInsensitiveDict(colors)
 
 deg = np.degrees
 rad = np.radians
@@ -74,6 +104,10 @@ def square_3d(ax):
         y = np.ptp(ax.get_ylim3d())
         z = np.ptp(ax.get_zlim3d())
         ax.set_box_aspect([x,y,z])
+        
+        # Remove Z axis ticks if it's too small
+        if z / min(x, y) < 1e-3:
+            ax.set_zticks([])
     else:
         ax.set_aspect('equal')
     
