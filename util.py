@@ -175,3 +175,11 @@ def jde_to_calendar(jde):
     dt = dt + datetime.timedelta(days=remainder)
     return dt
 # TODO figure out how to reverse the lecture slide calculations
+
+def jde_to_gmat(jde):
+    # from http://gmat.sourceforge.net/docs/nightly/html/SpacecraftEpoch.html
+    return jde - 2430000.0
+
+def gmat_to_jde(gmat):
+    # from http://gmat.sourceforge.net/docs/nightly/html/SpacecraftEpoch.html
+    return gmat + 2430000.0
