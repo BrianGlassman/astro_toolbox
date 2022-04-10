@@ -8,6 +8,7 @@ Created on Mon Feb  7 21:57:33 2022
 import numpy as np
 from collections import namedtuple, UserDict
 import datetime
+from matplotlib.patches import ConnectionPatch
 
 deg_sign = u'\N{DEGREE SIGN}'
 
@@ -119,6 +120,34 @@ def square_3d(ax):
             ax.set_zticks([])
     else:
         ax.set_aspect('equal')
+        
+def plot_point(threeDvector, ax, threeD, *args, **kwargs):
+    if threeD:
+        ax.plot(threeDvector[0], threeDvector[1], threeDvector[2], '.', *args, **kwargs)
+    else:
+        ax.plot(threeDvector[0], threeDvector[1], '.', *args, **kwargs)
+
+def plot_vector(start, threeDvector, ax, threeD, *args, **kwargs):
+    if isinstance(start, (int, float)) and start == 0:
+        start = [0, 0, 0]
+    if isinstance(threeDvector, (int, float)) and threeDvector == 0:
+        threeDvector = [0, 0, 0]
+        
+    threeDvector = start + threeDvector # Don't use +=, it overwrites the source in calling scope
+        
+    # FIXME handle args/kwargs
+    if args:
+        raise NotImplementedError("Can't handle args, only kwargs")
+        
+    if threeD:
+        raise NotImplementedError()
+        # TODO
+        # use this: https://stackoverflow.com/questions/22867620/putting-arrowheads-on-vectors-in-matplotlibs-3d-plot
+        # to draw 3D vectors with arrows
+    else:
+        arrow = ConnectionPatch(start[0:2], threeDvector[0:2], "data", "data",
+                                arrowstyle='-|>', *args, **kwargs)
+    ax.add_patch(arrow)
     
 def normalize_angle(angle):
     """Normalizes an angle to the range [0, 2*pi]"""
