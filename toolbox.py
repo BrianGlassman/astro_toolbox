@@ -586,7 +586,7 @@ class Orbit():
         
         return position, velocity
 
-    def plot(self, start=0, stop=1, steps=100, mode='period', threeD=True, fig=None, fig_kwargs={}, plot_kwargs={}):
+    def plot(self, start=0, stop=1, steps=100, mode='period', threeD=True, fig=None, plot_point=False, fig_kwargs={}, plot_kwargs={}):
         mode = mode.lower()
         if mode not in ['time', 'times', 'period', 'periods']:
             raise ValueError("Mode must be time/times or period/periods")
@@ -613,7 +613,7 @@ class Orbit():
         
         # Draw a dot at (0,0,0) for convenience
         if new_plot:
-            ax.plot([0], [0], 'k.')
+            ax.plot([0], [0], 'k.', label='Central Body')
         else:
             pass # Assume it was already drawn
             
@@ -626,8 +626,11 @@ class Orbit():
             if any(abs(p[:,2]) > threshold):
                 print(f"WARNING: Z value = {p[:,2].max()/(threshold/0.05)* 100}% of X/Y")
             ax.plot(p[:,0], p[:,1], **plot_kwargs)
+        
+        if plot_point:
+            self.plot_point(threeD=threeD, fig=fig)
     
-        fig.legend(['Central body', 'Orbit'])
+        fig.legend(['Central Body', 'Orbit'])
         ax.set_xlabel("X (km)")
         ax.set_ylabel("Y (km)")
         if threeD:
