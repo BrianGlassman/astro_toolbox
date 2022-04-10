@@ -52,6 +52,15 @@ planetary_radius = {# km
                     }
 planetary_radius = CaseInsensitiveDict(planetary_radius)
 
+# Minimum distance when designing flybys
+# NOTE: defined as altitude, but then immediately converted to total radius
+planetary_exclusion = {# km
+    'Earth': 300, # HW 6 instructions
+    'Mars': 200 # Lab 5 instructions, although it's target PE not necessarily exclusion zone
+    }
+planetary_exclusion = CaseInsensitiveDict(planetary_exclusion)
+planetary_exclusion = {p: v + planetary_radius[p] for p,v in planetary_exclusion.items()}
+
 # Default planet colors
 colors = { # https://matplotlib.org/stable/gallery/color/named_colors.html
     'Sun': 'yellow',
