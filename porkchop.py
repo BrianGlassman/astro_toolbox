@@ -53,6 +53,7 @@ def calc_pcp(depart_min, depart_max, depart_planet, arrive_min, arrive_max, arri
     '''Does the computation for a porkchop plot, but doesn't plot anything
     
     Dates should be JDE'''
+    # NOTE: can end up slightly overshooting the endpoint if (max-min) is not an even multiple of step size
     departure_dates = np.arange(depart_min, depart_max+step_size, step_size) # Use arange for integer increments
     arrival_dates = np.arange(arrive_min, arrive_max+step_size, step_size) # Use arange for integer increments
     
@@ -107,6 +108,10 @@ def calc_pcp(depart_min, depart_max, depart_planet, arrive_min, arrive_max, arri
     # For plot: Departure dates on X, arrival dates on Y
     x = [departure_date - depart_min for departure_date in departure_dates]
     y = [arrival_date - arrive_min for arrival_date in arrival_dates]
+    
+    # Check for failure
+    if np.isnan(tof_days).all():
+        raise ValueError("No valid transfers found")
     
     return x, y, depart_v_inf, depart_v_inf_vec, c3, arrive_v_inf, arrive_v_inf_vec, tof_days
 
