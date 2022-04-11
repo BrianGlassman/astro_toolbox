@@ -432,6 +432,13 @@ class Orbit():
         return util.Orbital_Elements(self.e, self.a, self.i, self.LAN, self.AoP, self.f, self.tau)
     
     @property
+    def ele_gmat(self):
+        '''Return the orbital elements as a namedtuple using GMAT's units'''
+        return util.Orbital_Elements(self.e, self.a,
+                                     util.deg(self.i), util.deg(self.LAN), util.deg(self.AoP), util.deg(self.f),
+                                     self.tau)
+    
+    @property
     def T(self):
         '''Orbital Period (seconds)'''
         return 2*np.pi*np.sqrt(self.a**3 / self.mu)
