@@ -80,6 +80,11 @@ colors = CaseInsensitiveDict(colors)
 deg = np.degrees
 rad = np.radians
 
+def days_to_secs(days):
+    return days*60*60*24
+def secs_to_days(secs):
+    return secs/60/60/24
+
 def unit(vector):
     """
     Normalize a vector (i.e. give the unit vector). Returns zero if the vector
