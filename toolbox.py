@@ -421,7 +421,10 @@ class Orbit():
         T = meeus.JDE_to_T(JDE)
         ele = meeus.get_elements(planet, T, angle_units='rad')
         ele['t'] = ele.pop('tau')
-        return cls(**ele, mu=util.mu['Sun'], time_mode='t0')
+        obj = cls(**ele, mu=util.mu['Sun'], time_mode='t0')
+        obj.planet = planet
+        obj.color = util.colors[planet]
+        return obj
 
     @property
     def ele(self):
@@ -587,6 +590,10 @@ class Orbit():
         return position, velocity
 
     def plot(self, start=0, stop=1, steps=100, mode='period', threeD=True, fig=None, plot_point=False, fig_kwargs={}, plot_kwargs={}):
+        # Avoid persistence between calls
+        if fig_kwargs == {}: fig_kwargs = {}
+        if plot_kwargs == {}: plot_kwargs = {}
+        
         mode = mode.lower()
         if mode not in ['time', 'times', 'period', 'periods']:
             raise ValueError("Mode must be time/times or period/periods")
@@ -616,6 +623,13 @@ class Orbit():
             ax.plot([0], [0], 'k.', label='Central Body')
         else:
             pass # Assume it was already drawn
+        
+        ### Set values for different things if none are specified
+        # Use the planet name as the label
+        if hasattr(self, "planet"): plot_kwargs.setdefault('label', self.planet)
+        # Use the default color
+        if hasattr(self, "color"): plot_kwargs.setdefault('color', self.color)
+        
             
         p = [self.position_velocity(time=t)[0] for t in np.linspace(start, stop, steps)]
         p = np.array(p)
@@ -628,7 +642,7 @@ class Orbit():
             ax.plot(p[:,0], p[:,1], **plot_kwargs)
         
         if plot_point:
-            self.plot_point(threeD=threeD, fig=fig)
+            self.plot_point(threeD=threeD, fig=fig, plot_kwargs=plot_kwargs)
     
         fig.legend(['Central Body', 'Orbit'])
         ax.set_xlabel("X (km)")
@@ -641,6 +655,10 @@ class Orbit():
     def plot_point(self, time=0, mode='period', threeD=True, fig=None, fig_kwargs={}, plot_kwargs={}):
         """Plot the planet's position at the given time
         Time can be either absolute or a multiple of orbit period"""
+        # Avoid persistence between calls
+        if fig_kwargs == {}: fig_kwargs = {}
+        if plot_kwargs == {}: plot_kwargs = {}
+        
         new_plot = fig is None
         
         # Normalize to using absolute time
