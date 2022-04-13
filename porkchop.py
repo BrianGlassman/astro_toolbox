@@ -81,7 +81,7 @@ def calc_pcp(depart_min, depart_max, depart_planet, arrive_min, arrive_max, arri
                 tof_days[y][x] = None
                 continue
             
-            # C3 calculation
+            # Departure
             r_planet_depart, v_planet_depart = depart_orbit.position_velocity()
             r_depart, v_depart = transfer.position_velocity()
             assert util.norm(r_depart - r_planet_depart) < 1e-3*util.norm(r_planet_depart)
@@ -92,6 +92,7 @@ def calc_pcp(depart_min, depart_max, depart_planet, arrive_min, arrive_max, arri
             assert depart_v_inf.dtype == np.float64
             c3[y][x] = v_inf**2
             
+            # Arrival
             r_planet_arrive, v_planet_arrive = arrive_orbit.position_velocity()
             r_arrive, v_arrive = transfer.position_velocity(tof_sec)
             msg = util.norm(r_arrive - r_planet_arrive) / util.norm(r_planet_arrive)
@@ -124,13 +125,15 @@ def plot_pcp(x, y,
         ax.set_xlabel(f'Departure: Days past {depart_date}')
         ax.set_ylabel(f'Arrival: Days past {arrive_date}')
         
-        CS = ax.contour(x, y, depart_vals, levels=depart_levels, colors=['red'], linewidths=.5)
-        lines.append(CS.legend_elements()[0][0])
-        ax.clabel(CS, CS.levels, inline=True, fontsize=10, inline_spacing=1)
+        if depart_vals is not None:
+            CS = ax.contour(x, y, depart_vals, levels=depart_levels, colors=['red'], linewidths=.5)
+            lines.append(CS.legend_elements()[0][0])
+            ax.clabel(CS, CS.levels, inline=True, fontsize=10, inline_spacing=1)
         
-        CS = ax.contour(x, y, arrive_vals, levels=arrive_levels, colors=['blue'], linewidths=.5)
-        lines.append(CS.legend_elements()[0][0])
-        ax.clabel(CS, CS.levels, inline=True, fontsize=10, inline_spacing=1)
+        if arrive_vals is not None:
+            CS = ax.contour(x, y, arrive_vals, levels=arrive_levels, colors=['blue'], linewidths=.5)
+            lines.append(CS.legend_elements()[0][0])
+            ax.clabel(CS, CS.levels, inline=True, fontsize=10, inline_spacing=1)
         
         CS = ax.contour(x, y, tof_days, levels=tof_levels, colors=['black'], linewidths=1)
         lines.append(CS.legend_elements()[0][0])
