@@ -290,6 +290,17 @@ class Orbit():
         -------
         an Orbit object that includes the given parameters
         """
+        ### Special syntax to auto-calculate the positions
+        if isinstance(position_1, tuple) and isinstance(position_2, tuple) and tof is None:
+            _planet, _date1 = position_1
+            _orbit = Orbit.from_meeus(_planet, _date1)
+            position_1 = _orbit.position_velocity()[0]
+            _planet, _date2 = position_2
+            _orbit = Orbit.from_meeus(_planet, _date2)
+            position_2 = _orbit.position_velocity()[0]
+            tof = util.days_to_secs(_date2 - _date1)
+            
+        
         # Call the argument tof for convenience, but rename for ease of coding
         tof_target = tof ; del tof
         
@@ -403,8 +414,10 @@ class Orbit():
         v1 = (position_2 - f*position_1) / g
         v2 = (g_dot*position_2 - position_1) / g
                 
-        return cls.from_pvt(position_1, v1,
-                            mu=mu, t0=t0, overrides=overrides, do_checks=do_checks)
+        obj = cls.from_pvt(position_1, v1,
+                           mu=mu, t0=t0, overrides=overrides, do_checks=do_checks)
+        obj.tof = tof
+        return obj
     from_lambert = from_Lambert # Alias
     
     @classmethod
