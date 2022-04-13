@@ -357,7 +357,8 @@ class Orbit():
         check_min_tof()
         
         tof_threshold = 1e-5
-        while True:
+        count = 0
+        while True and count < 1000:
             y = r1 + r2 + A*(psi*c3 - 1) / np.sqrt(c2)
             if A > 0 and y < 0:
                 # Readjust until y > 0
@@ -390,6 +391,10 @@ class Orbit():
             
             if abs(tof - tof_target) < tof_threshold:
                 break
+            
+            count += 1
+        else:
+            raise ValueError("Max count reached")
         
         f = 1 - y / r1
         g_dot = 1 - y / r2
