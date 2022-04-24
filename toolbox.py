@@ -72,10 +72,12 @@ class Orbit():
                 f -= 2*np.pi
             assert 0 <= f <= 2*np.pi, f"f = {f}"
         else:
-            assert -np.pi < f < np.pi
+            assert -np.pi < f <= np.pi, f
         return f
     
     def __init__(self, e, a, i, LAN, AoP, f, t, mu, do_checks=True, time_mode='t0'):
+        if isinstance(mu, str):
+            mu = util.mu[mu]
         if i > np.pi and i <= 180:
             # Assume given in degrees
             i = util.rad(i)
@@ -158,6 +160,8 @@ class Orbit():
         -------
         an Orbit object that includes the given parameters
         """
+        if isinstance(mu, str):
+            mu = util.mu[mu]
         if overrides is None:
             overrides = {}
         
@@ -290,6 +294,8 @@ class Orbit():
         -------
         an Orbit object that includes the given parameters
         """
+        if isinstance(mu, str):
+            mu = util.mu[mu]
         ### Special syntax to auto-calculate the positions
         if isinstance(position_1, tuple) and isinstance(position_2, tuple) and tof is None:
             _planet, _date1 = position_1
@@ -439,7 +445,7 @@ class Orbit():
         T = meeus.JDE_to_T(JDE)
         ele = meeus.get_elements(planet, T, angle_units='rad')
         ele['t'] = ele.pop('tau')
-        obj = cls(**ele, mu=util.mu['Sun'], time_mode='t0')
+        obj = cls(**ele, mu='Sun', time_mode='t0')
         obj.planet = planet
         obj.color = util.colors[planet]
         return obj
@@ -618,6 +624,11 @@ class Orbit():
         # Avoid persistence between calls
         if fig_kwargs == {}: fig_kwargs = {}
         if plot_kwargs == {}: plot_kwargs = {}
+        
+        if stop == 'tof':
+            stop = self.tof
+            mode = 'time'
+            assert start == 0
         
         mode = mode.lower()
         if mode not in ['time', 'times', 'period', 'periods']:
