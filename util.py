@@ -123,6 +123,14 @@ norm = np.linalg.norm # Sugar syntax for getting a vector's length
 # Note: tau is included even though it's not a true orbital element
 Orbital_Elements = namedtuple("Orbital_Elements", ['e','a','i','LAN','AoP','f','tau'])
 
+def fig_3d(*args, **kwargs):
+    from matplotlib import pyplot as plt
+    # 3D Plotting methodology from:
+    # https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
+    fig = plt.figure(*args, **kwargs)
+    ax = plt.axes(projection='3d')
+    return fig, ax
+
 def square_3d(ax):
     '''Make a 2D or 3D plot have "square" aspect ratio'''
     threeD = ax.name == "3d" # https://stackoverflow.com/a/43563348/14501840
