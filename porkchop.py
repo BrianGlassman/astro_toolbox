@@ -49,13 +49,15 @@ def compute_rp(v_in, v_out, mu):
     r_p = mu / v_inf_sq * (1/np.cos((np.pi-turn_angle)/2) - 1)
     return r_p
 
-def calc_pcp(depart_min, depart_max, depart_planet, arrive_min, arrive_max, arrive_planet, step_size=1):
+def calc_pcp(depart_min, depart_max, depart_planet, depart_step,
+             arrive_min, arrive_max, arrive_planet, arrive_step,
+             max_tof=float('inf')):
     '''Does the computation for a porkchop plot, but doesn't plot anything
     
     Dates should be JDE'''
     # NOTE: can end up slightly overshooting the endpoint if (max-min) is not an even multiple of step size
-    departure_dates = np.arange(depart_min, depart_max+step_size, step_size) # Use arange for integer increments
-    arrival_dates = np.arange(arrive_min, arrive_max+step_size, step_size) # Use arange for integer increments
+    departure_dates = np.arange(depart_min, depart_max+depart_step, depart_step) # Use arange for integer increments
+    arrival_dates = np.arange(arrive_min, arrive_max+arrive_step, arrive_step) # Use arange for integer increments
     
     # Calculate the v_inf values across the date ranges
     arrive_v_inf = np.zeros((len(arrival_dates), len(departure_dates)))
@@ -70,6 +72,13 @@ def calc_pcp(depart_min, depart_max, depart_planet, arrive_min, arrive_max, arri
         depart_v_inf_vec[y] = {}
         for x, departure_date in enumerate(departure_dates):
             if y%10 == 0 and x%10 == 0: print(x, end=' ')
+            if arrival_date - departure_date > max_tof:
+                depart_v_inf_vec[y][x] = None
+                depart_v_inf[y][x] = None
+                arrive_v_inf_vec[y][x] = None
+                arrive_v_inf[y][x] = None
+                tof_days[y][x] = None
+                continue
             
             try:
                 depart_orbit, arrive_orbit, transfer, tof_sec = _calc(departure_date, arrival_date, depart_planet, arrive_planet)
@@ -119,9 +128,14 @@ def calc_pcp(depart_min, depart_max, depart_planet, arrive_min, arrive_max, arri
 def plot_pcp(x, y,
              depart_date, depart_vals, depart_levels,
              arrive_date, arrive_vals, arrive_levels,
-             tof_days, tof_levels):
+             tof_days, tof_levels,
+             fig=None, ax=None):
         lines = []
-        fig, ax = plt.subplots(figsize=(11,8))
+        if fig is None and ax is None:
+            fig, ax = plt.subplots(figsize=(11,8))
+        elif fig is not None and ax is not None:
+            pass # Use as given
+        else: raise ValueError()
         ax.set_xlabel(f'Departure: Days past {depart_date}')
         ax.set_ylabel(f'Arrival: Days past {arrive_date}')
         
