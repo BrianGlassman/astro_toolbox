@@ -53,6 +53,19 @@ planetary_radius = {# km
                     }
 planetary_radius = CaseInsensitiveDict(planetary_radius)
 
+# Generated using Orbit.from_meeus April 19, 2022
+planetary_period = {# seconds
+                    'venus': 19414075.93340966,
+                    'earth': 31558244.20761866,
+                    'mars': 59354347.98146568,
+                    'jupiter': 374492590.3146652,
+                    'saturn': 932077469.8750662,
+                    'uranus': 2658823893.3606086,
+                    'neptune': 5214187832.621648,
+                    'pluto': 7829096563.614984,
+                    }
+planetary_period = CaseInsensitiveDict(planetary_period)
+
 # Minimum distance when designing flybys
 # NOTE: defined as altitude, but then immediately converted to total radius
 planetary_exclusion = {# km
