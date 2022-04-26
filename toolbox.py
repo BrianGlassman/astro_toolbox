@@ -75,7 +75,7 @@ class Orbit():
             assert -np.pi < f <= np.pi, f
         return f
     
-    def __init__(self, e, a, i, LAN, AoP, f, t, mu, do_checks=True, time_mode='t0'):
+    def __init__(self, e=0, a=util.AU, i=0, LAN=0, AoP=0, f=0, t=0, mu='Sun', do_checks=True, time_mode='t0'):
         if isinstance(mu, str):
             mu = util.mu[mu]
         if i > np.pi and i <= 180:
@@ -449,6 +449,19 @@ class Orbit():
         obj.planet = planet
         obj.color = util.colors[planet]
         return obj
+    
+    @classmethod
+    def from_hohmann(cls, r_p, r_a, mu='Sun'):
+        if isinstance(r_p, str):
+            r_p = util.planetary_approx_orbit[r_p]
+            r_p = r_p * util.AU
+        if isinstance(r_a, str):
+            r_a = util.planetary_approx_orbit[r_a]
+            r_a = r_a * util.AU
+        assert r_a >= r_p, "r_a must be larger than r_p"
+        a = (r_p + r_a) / 2
+        e = (r_a - r_p) / (r_a + r_p)
+        return cls(e=e, a=a, mu=mu)
 
     @property
     def ele(self):
@@ -466,6 +479,26 @@ class Orbit():
     def T(self):
         '''Orbital Period (seconds)'''
         return 2*np.pi*np.sqrt(self.a**3 / self.mu)
+    
+    @property
+    def r_p(self):
+        '''Radius of periapsis'''
+        # TODO add an argument vector=False which calculates the position of periapsis, not just radius
+        # r_p = (h**2/mu) / (1+e) ... h**2/mu = a*(1-e**2)
+        num = self.a * (1 - self.e**2)
+        den = 1 + self.e
+        return num / den
+    
+    @property
+    def r_a(self):
+        '''Radius of apoapsis'''
+        # TODO add an argument vector=False which calculates the position of apoapsis, not just radius
+        assert self.a > 0, "Apoapsis is undefined for parabolic/hyperbolic orbits"
+        # FIXME I think r_a actually is defined for hyperbolic, just weirdly
+        # r_a = (h**2/mu) / (1-e) ... h**2/mu = a*(1-e**2)
+        num = self.a * (1 - self.e**2)
+        den = 1 - self.e
+        return num / den
     
     @property
     def E(self):
