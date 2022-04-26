@@ -14,19 +14,24 @@ deg_sign = u'\N{DEGREE SIGN}'
 
 J_cent = 36525 # Number of days in a Julian century
 J2000 = 2451545.0
-AU = 1.49597870700e8 # km / AU - per PlanetaryGravitationalCoefficientsRadii-1 on 6008 Canvas
+# AU = 1.49597870700e8 # km / AU - per PlanetaryGravitationalCoefficientsRadii-1 on 6008 Canvas
+AU = 1.49597870691e8 # km / AU - per HW9 instructions
 
 class CaseInsensitiveDict(UserDict):
     '''A dictionary that is case-insensitive for keys'''
     def __init__(self, baseDict):
         assert isinstance(baseDict, dict)
         assert all(isinstance(key, str) for key in baseDict.keys())
-        baseDict = {key.lower():val for key,val in baseDict.items()}
+        assert len(set(k.lower() for k in baseDict.keys())) == len(baseDict.keys()), \
+            "Duplicate case-insensitive keys"
         super().__init__(baseDict)
         
     def __getitem__(self, key):
         assert isinstance(key, str)
-        return super().__getitem__(key.lower())
+        for k in super().keys():
+            if key.lower() == k.lower():
+                return super().__getitem__(k)
+        raise KeyError(key)
         
 mu = {# km^3/s^2
       'Sun'     : 1.32712440018e11,
@@ -75,12 +80,26 @@ planetary_exclusion = {# km
 planetary_exclusion = CaseInsensitiveDict(planetary_exclusion)
 planetary_exclusion = {p: v + planetary_radius[p] for p,v in planetary_exclusion.items()}
 
+planetary_approx_orbit = {# AU - from HW9 instructions
+    'Mercury': 0.387,
+    'Venus': 0.723,
+    'Earth': 1,
+    'Mars': 1.524,
+    'Jupiter': 5.203,
+    'Saturn': 9.537,
+    'Uranus': 19.191,
+    'Neptune': 30.069,
+    'Pluto': 39.482,
+    }
+planetary_approx_orbit = CaseInsensitiveDict(planetary_approx_orbit)
+
 # Default planet colors
 colors = { # https://matplotlib.org/stable/gallery/color/named_colors.html
     'Sun': 'yellow',
+    'Mercury': 'grey',
     'Venus': 'tan',
-    'Earth': 'blue',
-    'Luna': 'royalblue',
+    'Earth': 'royalblue',
+    'Luna': 'lightsteelblue',
     'Mars': 'orangered',
     'Jupiter': 'sandybrown',
     'Saturn': 'gold',
