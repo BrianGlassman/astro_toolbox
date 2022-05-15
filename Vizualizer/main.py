@@ -16,6 +16,7 @@ if __name__ == '__main__':
     os.chdir('../..')
 
 from astro_toolbox import Orbit, util
+from astro_toolbox import meeus # For checking for valid planets
 
 def gridconfigure(obj, rw=None, cw=None):
     """
@@ -44,19 +45,19 @@ class Model:
     def __init__(self, *, master):
         self.planet_lines = {}
         self.planet_orbits = {}
+        self.state = 'free' # For locking the model so only one window can edit at a time
         
         ### Create the orbit plot
         # https://matplotlib.org/3.1.0/gallery/user_interfaces/embedding_in_tk_sgskip.html
-        self.fig = Figure(figsize=(5, 5), dpi=100)
-        ax = self.fig.add_subplot(111)
-        canvas = FigureCanvasTkAgg(self.fig, master=master)
+        fig = Figure(figsize=(5, 5), dpi=100)
+        fig.add_subplot(111)
+        canvas = FigureCanvasTkAgg(fig, master=master)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        
-        self.planets = ['Earth'] # Assume launching from Earth
-        self.init_planet('Earth')
+        self.fig = fig ; self.canvas = canvas
         
     def init_planet(self, planet, date=None):
+        print("Init " + planet)
         if date is None:
             date = 2440422.5 # Moon Landing
             
@@ -65,9 +66,33 @@ class Model:
         
         orbit.plot(fig=self.fig)
         
-class TargetsWindow:
-    def __init__(self, *args, model, title, bg='red', **kwargs):
+        self.update_plot()
+        
+    def destroy_planet(self, planet):
+        print("TODO destroy " + planet)
+        
+    def update_plot(self):
+        self.canvas.draw_idle()
+        
+class Window:
+    def __init__(self, *args, model, title='', bg='yellow', **kwargs):
         self.tk = tk.Toplevel(bg=bg, *args, **kwargs)
+        self.model = model
+        
+        self.tk.withdraw()
+        self.tk.title(title)
+        
+        # Set action when X is clicked
+        # (Doesn't seem to change what happens when Root is closed)
+        self.tk.protocol('WM_DELETE_WINDOW', self.onDestroy)
+            
+    def onDestroy(self):
+        self.tk.withdraw()
+Placeholder = Window
+        
+class TargetsWindow(Window):
+    def __init__(self, *args, model, title, bg='red', **kwargs):
+        super().__init__(*args, model=model, title=title, bg=bg, **kwargs)
         
         ### Text box
         text = tk.Text(self.tk, height=8)
@@ -84,22 +109,58 @@ class TargetsWindow:
         
     def unlock(self):
         '''Unlock the list for editing'''
+        assert self.model.state == 'free' # Make sure nothing else is being edited
+        
+        ### Change state
         self.text['state'] = 'normal'
+        self.text['bg'] = 'white'
         self.button['text'] = 'Save'
         self.button['command'] = self.lock
         
     def lock(self):
         '''Save the list and publish the updates'''
-        self.text['state'] = 'disabled'
-        self.button['text'] = 'Edit'
-        self.button['command'] = self.unlock
-        
+        old_vals = self.old_vals
         new_vals = self.text.get('0.0', tk.END)
         new_vals = [x.strip() for x in new_vals.split('\n')]
         new_vals = [x for x in new_vals if x]
-        if new_vals != self.old_vals:
-            print(new_vals)
+        
+        ### Check for invalid planets
+        # Return early (without changing state) if any invalid planets found
+        if new_vals != old_vals:
+            invalid = [val for val in new_vals if val not in meeus.meeus.keys()]
+            if invalid:
+                msg = 'Invalid planet'
+                if len(invalid) > 1:
+                    msg += 's'
+                msg += ': '
+                msg += ', '.join(invalid)
+                tk.messagebox.showerror(title='Invalid Planet',
+                                        message=msg)
+                return
+        
+        ### Update with the new values
+        if new_vals != old_vals:
+            # Initialize any new planets
+            for val in new_vals:
+                if val not in old_vals:
+                    self.model.init_planet(val)
+            # Destroy any removed planets
+            for val in old_vals:
+                if val not in new_vals:
+                    self.model.destroy_planet(val)
+            
             self.old_vals = new_vals
+        
+        ### Change state
+        self._disable()
+    def _disable(self):
+        '''Helper function to handle the state change itself'''
+        self.text['state'] = 'disabled'
+        self.text['bg'] = 'light grey'
+        self.button['text'] = 'Edit'
+        self.button['command'] = self.unlock
+        
+        self.model.state = 'free'
         
 class DatesWindow:
     def __init__(self, *args, bg='blue', **kwargs):
@@ -112,19 +173,6 @@ class PlotsWindow:
 class DetailsWindow:
     def __init__(self, *args, bg='green', **kwargs):
         self.frame = ttk.Frame(bg=bg, *args, **kwargs)
-        
-class Placeholder:
-    def __init__(self, *args, model, title='', bg='yellow', **kwargs):
-        self.tk = tk.Toplevel(bg=bg, *args, **kwargs)
-        self.tk.withdraw()
-        self.tk.title(title)
-        
-        # Set action when X is clicked
-        # (Doesn't seem to change what happens when Root is closed)
-        self.tk.protocol('WM_DELETE_WINDOW', self.onDestroy)
-            
-    def onDestroy(self):
-        self.tk.withdraw()
 
 # TODO
 '''
