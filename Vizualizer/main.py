@@ -43,9 +43,14 @@ def gridconfigure(obj, rw=None, cw=None):
         
 class Model:
     def __init__(self, *, master):
-        self.planet_lines = {}
         self.planet_orbits = {}
+        self.planet_lines = {}
+        self.planet_dots = {}
+        self.planet_positions = {}
         self.state = 'free' # For locking the model so only one window can edit at a time
+        
+        self.last_date = None # Initialize to None so that first update call runs
+        self.current_date = tk.DoubleVar(value=2440422.5, name='Current Date')
         
         ### Create the orbit plot
         # https://matplotlib.org/3.1.0/gallery/user_interfaces/embedding_in_tk_sgskip.html
@@ -56,22 +61,43 @@ class Model:
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         self.fig = fig ; self.canvas = canvas
         
-    def init_planet(self, planet, date=None):
-        print("Init " + planet)
-        if date is None:
-            date = 2440422.5 # Moon Landing
-            
+    def init_planet(self, planet):
+        date = self.current_date.get()
         orbit = Orbit.from_meeus(planet, date)
         self.planet_orbits[planet] = orbit
+        self.planet_positions[planet] = {date: orbit.position_velocity(util.days_to_secs(date))[0]}
         
-        orbit.plot(fig=self.fig)
+        fig, ax = orbit.plot(fig=self.fig, plot_point=True)
+        self.planet_lines[planet] = ax.lines[-2]
+        self.planet_dots[planet] = ax.lines[-1]
         
-        self.update_plot()
+        self._update_plot()
         
     def destroy_planet(self, planet):
         print("TODO destroy " + planet)
         
-    def update_plot(self):
+    def change_date(self, new_date):
+        if new_date == self.current_date:
+            return
+        
+        self._update_plot()
+        
+    def _update_planet(self, planet):
+        date = self.current_date.get()
+        # Get position for this date (generate it if needed)
+        pos_dict = self.planet_positions[planet]
+        position = pos_dict.get(date)
+        if position is None:
+            position = self.planet_orbits[planet].position_velocity(util.days_to_secs(date))[0]
+            pos_dict[date] = position
+        # Update the plot data
+        self.planet_dots[planet].set_data(position[0], position[1])
+        
+    def _update_plot(self):
+        ### Update planet positions
+        for planet in self.planet_dots.keys():
+            self._update_planet(planet)
+        
         self.canvas.draw_idle()
         
 class Window:
@@ -105,11 +131,13 @@ class TargetsWindow(Window):
         button.pack()
         self.button = button
         self.old_vals = []
+        self.unlock()
         self.lock()
         
     def unlock(self):
-        '''Unlock the list for editing'''
-        assert self.model.state == 'free' # Make sure nothing else is being edited
+        '''Unlock the window, lock the model'''
+        assert self.model.state == 'free' # Make sure nothing else is being edited already
+        self.model.state = 'editing targets' # Lock to this window
         
         ### Change state
         self.text['state'] = 'normal'
@@ -118,7 +146,9 @@ class TargetsWindow(Window):
         self.button['command'] = self.lock
         
     def lock(self):
-        '''Save the list and publish the updates'''
+        '''Save and publish the updates, unlock the model'''
+        assert self.model.state == 'editing targets'
+        
         old_vals = self.old_vals
         new_vals = self.text.get('0.0', tk.END)
         new_vals = [x.strip() for x in new_vals.split('\n')]
@@ -162,9 +192,48 @@ class TargetsWindow(Window):
         
         self.model.state = 'free'
         
-class DatesWindow:
-    def __init__(self, *args, bg='blue', **kwargs):
-        self.frame = ttk.Frame(bg=bg, *args, **kwargs)
+class DatesWindow(Window):
+    def __init__(self, *args, model, title, bg='blue', **kwargs):
+        super().__init__(*args, model=model, title=title, bg=bg, **kwargs)
+        
+        ### Text box
+        text = tk.Text(self.tk, height=8)
+        text.insert('0.0', 'Earth')
+        text.pack()
+        self.text = text
+        
+        ### Button
+        button = ttk.Button(self.tk)
+        button.pack()
+        self.button = button
+        self.old_vals = []
+        self.lock()
+        
+    def unlock(self):
+        '''Unlock the window, lock the model'''
+        assert self.model.state == 'free' # Make sure nothing else is being edited already
+        self.model.state = 'editing dates' # Lock to this window
+        
+        ### Change state
+        # self.text['state'] = 'normal'
+        # self.text['bg'] = 'white'
+        self.button['text'] = 'Save'
+        self.button['command'] = self.lock
+        
+    def lock(self):
+        '''Save and publish the updates, unlock the model'''
+        assert self.model.state == 'editing dates'
+        
+        ### Change state
+        self._disable()
+    def _disable(self):
+        '''Helper function to handle the state change itself'''
+        # self.text['state'] = 'disabled'
+        # self.text['bg'] = 'light grey'
+        self.button['text'] = 'Edit'
+        self.button['command'] = self.unlock
+        
+        self.model.state = 'free'
         
 class PlotsWindow:
     def __init__(self, *args, bg='black', **kwargs):
@@ -201,13 +270,16 @@ class Main:
         self.menuBar.add_cascade(label="Windows", menu=self.windowMenu)
         self.window.configure(menu=self.menuBar)
         
+        ### Time slider
+        value = self.model.current_date.get()
+        slider = ttk.Scale(master=self.window, variable=self.model.current_date, from_=value-180, to=value+180)
+        slider['command'] = self.model.change_date
+        slider.pack(anchor='s', fill='x')
+        self.slider = slider
         
         
-        ### TEMP
-        self.open_window('Targets')
         
-        
-        
+        ###
         self.window.mainloop()
         
     def init_window(self, cls, title):
