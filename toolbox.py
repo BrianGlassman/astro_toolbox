@@ -444,7 +444,7 @@ class Orbit():
         from . import meeus
         T = meeus.JDE_to_T(JDE)
         ele = meeus.get_elements(planet, T, angle_units='rad')
-        ele['t'] = ele.pop('tau')
+        ele['t'] = JDE
         obj = cls(**ele, mu='Sun', time_mode='t0')
         obj.planet = planet
         obj.color = util.colors[planet]
@@ -705,9 +705,9 @@ class Orbit():
         if threeD:
             ax.plot(p[:,0], p[:,1], p[:,2], **plot_kwargs)
         else:
-            threshold = abs(p[:,0:2]).max()*.05 # Use max instead of min because of axis crossings
-            if any(abs(p[:,2]) > threshold):
-                print(f"WARNING: Z value = {p[:,2].max()/(threshold/0.05)* 100}% of X/Y")
+            threshold = abs(p[:,0:2]).max() # Use max instead of min because of axis crossings
+            if any(abs(p[:,2]) > threshold*.05):
+                print(f"WARNING: Orbit Z value = {p[:,2].max()/threshold * 100:0.3f}% of X/Y")
             ax.plot(p[:,0], p[:,1], **plot_kwargs)
         
         if plot_point:
@@ -760,9 +760,9 @@ class Orbit():
         if threeD:
             ax.plot(p[0], p[1], p[2], **plot_kwargs)
         else:
-            threshold = abs(p[0:2]).min()
+            threshold = abs(p[0:2]).max() # Use max instead of min because of axis crossings
             if abs(p[2]) > threshold*.05:
-                print(f"WARNING: Z value = {p[2].max()/threshold * 100}% of min(X,Y)")
+                print(f"WARNING: Point Z value = {p[2]/threshold * 100:0.3f}% of X,Y")
             ax.plot(p[0], p[1], **plot_kwargs)
     
         fig.legend(['Central body', 'Orbit'])

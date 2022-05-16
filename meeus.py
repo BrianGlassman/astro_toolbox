@@ -82,8 +82,6 @@ def get_elements(planet, T, angle_units='rad'):
     # Derived value
     values['f'] = get_TA(**values)
     values['AoP'] = values['LoP'] - values['LAN']
-    # Time # FIXME TODO
-    values['tau'] = 0
     # Unit conversion
     values['a'] = values['a'] * AU
     
@@ -95,7 +93,7 @@ def get_elements(planet, T, angle_units='rad'):
         for k in ['i', 'LAN', 'AoP', 'f']:
             values[k] = np.deg2rad(values[k])
     
-    # {e, a, i, LAN, AoP, f, tau}
+    # {e, a, i, LAN, AoP, f} -- Note: tau/t0 not included
     return values
 
 meeus = {
