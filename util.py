@@ -158,7 +158,8 @@ def square_3d(ax):
         x = np.ptp(ax.get_xlim3d())
         y = np.ptp(ax.get_ylim3d())
         z = np.ptp(ax.get_zlim3d())
-        ax.set_box_aspect([x,y,z])
+        v = max(x, y, z)
+        ax.set_box_aspect([v, v, v])
         
         # Remove Z axis ticks if it's too small
         if z / min(x, y) < 1e-3:
