@@ -194,7 +194,23 @@ def plot_vector(start, threeDvector, ax, threeD, *args, **kwargs):
         arrow = ConnectionPatch(start[0:2], threeDvector[0:2], "data", "data",
                                 arrowstyle='-|>', *args, **kwargs)
     ax.add_patch(arrow)
-    
+
+def plot_sphere(radius, ax, **plot_kwargs):
+    # Adapted from https://github.com/Elucidation/OrbitalElements/blob/master/graphics.py
+
+    # Set of all spherical angles:
+    u = np.linspace(0, 2 * np.pi, 100)
+    v = np.linspace(0, np.pi, 100)
+
+    # Cartesian coordinates that correspond to the spherical angles:
+    # (this is the equation of an ellipsoid):
+    x = radius * np.outer(np.cos(u), np.sin(v))
+    y = radius * np.outer(np.sin(u), np.sin(v))
+    z = radius * np.outer(np.ones_like(u), np.cos(v))
+
+    # Plot:
+    ax.plot_wireframe(x, y, z, rstride=4, cstride=4, **plot_kwargs)
+
 def normalize_angle(angle):
     """Normalizes an angle to the range [0, 2*pi]"""
     while angle < 0:
