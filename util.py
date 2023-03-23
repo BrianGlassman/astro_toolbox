@@ -173,6 +173,21 @@ def plot_point(threeDvector, ax, threeD, *args, **kwargs):
     else:
         ax.plot(threeDvector[0], threeDvector[1], '.', *args, **kwargs)
 
+def plot_line(vector: np.ndarray, ax, threeD: bool, **kwargs):
+    """Draw a line
+    vector - numpy array with positions in rows.
+        ex.
+           3D            2D
+        [[1 2 3]   or  [[1 2]  <-- point 1
+         [4 5 6]]       [3 4]  <-- point 2
+    """
+    if threeD:
+        assert vector.shape == (2, 3)
+        ax.plot(vector[:,0], vector[:,1], vector[:,2], **kwargs)
+    else:
+        assert vector.shape == (2, 2)
+        ax.plot(vector[:,0], vector[:,1], **kwargs)
+
 def plot_vector(start, threeDvector, ax, threeD, *args, **kwargs):
     if isinstance(start, (int, float)) and start == 0:
         start = [0, 0, 0]
