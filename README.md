@@ -21,7 +21,7 @@ Orbits can be created using:
 
 Various properties and methods are provided, including:
 - All Keplerian orbital elements, as well as orbital period and eccentric anomaly
-- predit(time) to calculate true and eccentric anomaly at an arbitrary time
+- predict(time) to calculate true and eccentric anomaly at an arbitrary time
 - position_velocity() which takes an optional time argument, returning the position and velocity relative to the central body
 - plot() to plot orbit path, with options to plot multiple or partial orbits and select 2D or 3D plotting
 - plot_point() to plot the object's position, usually used in conjunction with plot() to show the current position along the orbit path
