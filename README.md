@@ -1,4 +1,4 @@
-# astro_toolbox
+# Astro Toolbox
 Toolbox for doing astrodynamics work, developed as part of my classwork. Assumes an idealized 2-body-problem.
 Generally units are kilometers and seconds, SI otherwise.
 
@@ -27,6 +27,6 @@ Various properties and methods are provided, including:
 - plot_point() to plot the object's position, usually used in conjunction with plot() to show the current position along the orbit path
 
 ## Future work
-Handle hyperbolic orbits
-Performance improvements
-Integrate numerical integration and perturbations (completed as part of a homework assignment, but not yet cleaned up for the library)
+- Handle hyperbolic orbits
+- Performance improvements
+- Integrate numerical integration and perturbations (completed as part of a homework assignment, but not yet cleaned up for the library)
